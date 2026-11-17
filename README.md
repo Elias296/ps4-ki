@@ -10,6 +10,10 @@ Eine einzelne Webseite (`index.html`, keine Abhängigkeiten, kein Tracking) für
 - Chats, Einstellungen und ein optionaler API-Schlüssel werden **nur im lokalen Speicher deines Browsers** abgelegt. An GitHub geht nichts.
 - Das Modell ist klein und langsam (ca. 4 Tokens/s, 4096 Tokens Kontext). Es taugt für kurze Texte, nicht für komplexe Logik oder Fehlersuche. Prüfe Antworten selbst. Keine Geheimnisse eingeben: Die Verbindung zur PS4 ist unverschlüsselt (http) und der Server hat standardmäßig kein Passwort.
 
+## Passwort
+
+Beim Öffnen fragt die Seite nach einem Passwort. Im Quelltext steht nur ein Hash (PBKDF2-SHA256, 100 000 Runden, zufälliges Salz), nie das Passwort selbst. Das ist **eine Sperre für die Oberfläche, kein echter Schutz**: Auf einer statischen Seite kann jeder Besucher den Quelltext lesen und die Sperre umgehen. Wirklich geschützt ist die KI dadurch, dass sie nur im Heimnetz erreichbar ist. Mit dem Schloss-Symbol oben rechts sperrst du die Seite wieder.
+
 ## Benutzen
 
 1. Seite öffnen und unter **Einstellungen** die Adresse der PS4 eintragen, z. B. `http://192.168.x.x:8080`.
