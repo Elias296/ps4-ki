@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PS4 KI</title>
+<meta name="description" content="Eigene Oberfläche für das lokale KI-Modell auf der PS4: Chat, Übersetzen, Zusammenfassen, Umformulieren und mehr. Alles bleibt in deinem Heimnetz.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M20 44V20h14a9 9 0 0 1 0 18H28' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --panel2:#eef0f4; --text:#15181e; --muted:#5b6472; --line:#d9dde4;
+  --accent:#2563eb; --accent-text:#ffffff; --user:#e3ecff; --ok:#15803d; --warn:#b45309; --bad:#b91c1c;
+  --code:#0f172a; --code-text:#e2e8f0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --panel:#171b22; --panel2:#1f242d; --text:#e7eaf0; --muted:#98a1b0; --line:#2b323d;
+    --accent:#6ea0ff; --accent-text:#0b1220; --user:#1d2a44; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#171b22; --panel2:#1f242d; --text:#e7eaf0; --muted:#98a1b0; --line:#2b323d;
+  --accent:#6ea0ff; --accent-text:#0b1220; --user:#1d2a44; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:1.05rem;margin:0;font-weight:650;letter-spacing:.2px}
+.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:var(--accent-text);font-weight:800;font-size:.8rem}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:.82rem;color:var(--muted);background:var(--panel2)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.pill.ok .dot{background:var(--ok)} .pill.warn .dot{background:var(--warn)} .pill.bad .dot{background:var(--bad)}
+.btn{border:1px solid var(--line);background:var(--panel2);padding:7px 12px;border-radius:9px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-text);border-color:transparent;font-weight:600}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.layout{flex:1;display:flex;min-height:0}
+aside{width:250px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+aside .top{padding:12px;display:flex;gap:8px}
+aside .top .btn{flex:1}
+#chatlist{overflow:auto;padding:0 8px 12px;display:flex;flex-direction:column;gap:2px}
+.chatitem{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:9px;cursor:pointer;border:1px solid transparent}
+.chatitem:hover{background:var(--panel2)}
+.chatitem.active{background:var(--panel2);border-color:var(--line)}
+.chatitem span.t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.92rem}
+.chatitem button{border:0;background:none;color:var(--muted);padding:2px 6px;border-radius:6px}
+.chatitem button:hover{color:var(--bad)}
+main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.modebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.modebar select,.modebar input{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px}
+.modehint{color:var(--muted);font-size:.88rem;flex-basis:100%}
+#log{flex:1;overflow:auto;padding:18px 16px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+.empty{margin:auto;max-width:560px;text-align:center;color:var(--muted)}
+.empty h2{color:var(--text);font-size:1.2rem;margin:0 0 6px}
+.msg{max-width:min(820px,100%);padding:11px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);align-self:flex-start;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--user);border-color:transparent}
+.msg .who{display:block;font-size:.75rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.msg pre{background:var(--code);color:var(--code-text);padding:10px 12px;border-radius:9px;overflow:auto;white-space:pre;margin:8px 0;font:.88rem/1.45 ui-monospace,Consolas,monospace}
+.msg .meta{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:.78rem;color:var(--muted)}
+.msg .meta button{border:0;background:none;color:var(--muted);padding:0;text-decoration:underline}
+.msg.err{border-color:var(--bad)}
+.cursor::after{content:"▍";animation:blink 1s steps(2) infinite;color:var(--accent)}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.cursor::after{animation:none}#log{scroll-behavior:auto}}
+.composer{padding:12px 16px 16px;border-top:1px solid var(--line);background:var(--panel)}
+.composer .row{display:flex;gap:10px;align-items:flex-end}
+textarea#input{flex:1;resize:vertical;min-height:72px;max-height:40vh;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.composer .info{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:.8rem;margin-top:6px;flex-wrap:wrap}
+.composer .info .warnline{color:var(--warn)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:0;width:min(560px,94vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{padding:18px;display:grid;gap:12px}
+dialog h2{margin:0;font-size:1.1rem}
+label{display:grid;gap:4px;font-size:.88rem;color:var(--muted)}
+label input,label select,label textarea{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--text)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.help{font-size:.84rem;color:var(--muted);background:var(--panel2);border-radius:10px;padding:10px 12px}
+.help b{color:var(--text)}
+.help code{background:var(--bg);padding:1px 5px;border-radius:5px}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#menu{display:none}
+@media (max-width:820px){
+  aside{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-102%);transition:transform .2s;width:min(300px,86vw);box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  aside.open{transform:none}
+  #menu{display:inline-block}
+  .grid2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){aside{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <button class="btn" id="menu" aria-label="Chats anzeigen">☰</button>
+  <div class="logo" aria-hidden="true">P4</div>
+  <h1>PS4 KI</h1>
+  <span class="pill" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statustext">prüfe …</span></span>
+  <span class="spacer"></span>
+  <span class="pill" id="speed" hidden></span>
+  <button class="btn" id="btnTheme" title="Farbschema wechseln" aria-label="Farbschema wechseln">◐</button>
+  <button class="btn" id="btnSettings">Einstellungen</button>
+</header>
+
+<div class="layout">
+  <aside id="side" aria-label="Chats">
+    <div class="top">
+      <button class="btn primary" id="btnNew">+ Neuer Chat</button>
+    </div>
+    <div id="chatlist"></div>
+  </aside>
+
+  <main>
+    <div class="modebar">
+      <label class="sr" for="mode">Modus</label>
+      <select id="mode" aria-label="Modus"></select>
+      <span id="modeopts"></span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnExport" title="Chat als Textdatei speichern">Exportieren</button>
+      <div class="modehint" id="modehint"></div>
+    </div>
+
+    <div id="log" aria-live="polite"></div>
+
+    <div class="composer">
+      <div class="row">
+        <label class="sr" for="input">Eingabe</label>
+        <textarea id="input" placeholder="Text eingeben … (Strg+Enter zum Senden)"></textarea>
+        <div style="display:grid;gap:8px">
+          <button class="btn primary" id="btnSend">Senden</button>
+          <button class="btn" id="btnStop" hidden>Stopp</button>
+        </div>
+      </div>
+      <div class="info">
+        <span id="tokinfo"></span>
+        <span>Läuft lokal auf deiner PS4 · kostenlos · nichts geht an GitHub oder Dritte</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" id="settingsForm">
+    <h2>Einstellungen</h2>
+    <label>Adresse des PS4-Servers
+      <input id="sServer" type="text" inputmode="url" placeholder="http://192.168.x.x:8080" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="grid2">
+      <label>Modell
+        <input id="sModel" type="text" placeholder="qwen3-4b" autocomplete="off" spellcheck="false">
+      </label>
+      <label>Max. Antwortlänge (Tokens)
+        <input id="sMax" type="number" min="16" max="1500" step="10">
+      </label>
+    </div>
+    <div class="grid2">
+      <label>Kreativität (0 = sachlich, 1 = frei)
+        <input id="sTemp" type="number" min="0" max="1.5" step="0.1">
+      </label>
+      <label>API-Schlüssel (nur falls gesetzt)
+        <input id="sKey" type="password" autocomplete="off" placeholder="leer lassen">
+      </label>
+    </div>
+    <label>Eigener System-Prompt für den Modus „Chat“
+      <textarea id="sSystem" rows="3"></textarea>
+    </label>
+    <div class="help" id="helpbox"></div>
+    <div class="actions">
+      <button class="btn" value="cancel" formnovalidate>Abbrechen</button>
+      <button class="btn primary" value="save" id="btnSave">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+/* ---------- kleine Helfer ---------- */
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+const uid = () => Math.random().toString(36).slice(2, 10);
+const estTokens = (s) => Math.ceil((s || "").length / 3.2);   // grobe Schätzung für Deutsch
+
+/* ---------- Modi ---------- */
+const MODES = {
+  chat:      { name: "Chat", hint: "Freies Gespräch. Der Verlauf wird mitgeschickt (nur die letzten Nachrichten, wegen des kleinen Kontextfensters).", multi: true },
+  translate: { name: "Übersetzen", hint: "Text einfügen, die Zielsprache wählen. Gut für kurze Texte.", opts: [["Zielsprache", "lang", ["Englisch","Deutsch","Französisch","Spanisch","Italienisch","Türkisch","Russisch"]]],
+    system: "Du bist ein präziser Übersetzer. Gib ausschließlich die Übersetzung aus, ohne Erklärung.",
+    build: (t, o) => `Übersetze den folgenden Text ins ${o.lang || "Englische"}:\n\n${t}` },
+  summarize: { name: "Zusammenfassen", hint: "Kurze Texte (unter etwa 600 Wörtern). Längere dauern auf der PS4 sehr lange.", opts: [["Länge", "len", ["1 Satz","3 Sätze","5 Stichpunkte"]]],
+    system: "Du fasst Texte sachlich und korrekt zusammen. Erfinde nichts dazu. Antworte auf Deutsch.",
+    build: (t, o) => `Fasse den folgenden Text in ${o.len || "3 Sätzen"} zusammen:\n\n${t}` },
+  rewrite:   { name: "Umformulieren", hint: "Verbessert Ton und Stil, ohne den Inhalt zu ändern.", opts: [["Stil", "tone", ["freundlicher","formeller","kürzer","einfacher","sachlicher"]]],
+    system: "Du formulierst Texte um. Behalte Inhalt und Sprache bei. Gib nur den neuen Text aus.",
+    build: (t, o) => `Formuliere den folgenden Text ${o.tone || "freundlicher"} um:\n\n${t}` },
+  explain:   { name: "Einfach erklären", hint: "Erklärt Begriffe oder Texte in einfachen Worten.", system: "Du erklärst Dinge einfach, kurz und korrekt auf Deutsch. Wenn du etwas nicht sicher weißt, sage es.",
+    build: (t) => `Erkläre einfach und kurz:\n\n${t}` },
+  bullets:   { name: "Notizen → Stichpunkte", hint: "Macht aus unordentlichen Notizen eine klare Liste.", system: "Du ordnest Notizen zu einer kurzen, klaren Stichpunktliste auf Deutsch. Erfinde nichts.",
+    build: (t) => `Mache aus diesen Notizen eine übersichtliche Stichpunktliste:\n\n${t}` },
+  email:     { name: "E-Mail-Entwurf", hint: "Beschreibe das Anliegen in Stichworten, du bekommst einen Entwurf mit Betreff.", opts: [["Ton","tone",["freundlich","förmlich","kurz und direkt"]]],
+    system: "Du schreibst kurze, höfliche E-Mail-Entwürfe auf Deutsch mit Betreff. Erfinde keine Fakten, Namen oder Termine.",
+    build: (t, o) => `Schreibe einen ${o.tone || "freundlichen"} E-Mail-Entwurf zu diesem Anliegen:\n\n${t}` },
+  code:      { name: "Code erklären (klein)", hint: "Nur für kurze Code-Stücke. Für Fehlersuche und größere Aufgaben ist das Modell zu klein.", system: "Du erklärst kurze Code-Stücke verständlich auf Deutsch. Sei vorsichtig, wenn du unsicher bist.",
+    build: (t) => `Erkläre kurz, was dieser Code macht:\n\n${t}` }
+};
+
+/* ---------- Zustand ---------- */
+const DEFAULT_SYSTEM = "Du bist ein hilfreicher, ehrlicher Assistent. Antworte knapp und klar auf Deutsch. Wenn du etwas nicht weißt, sage es.";
+const settings = Object.assign({ server: "", model: "qwen3-4b", temperature: 0.4, maxTokens: 400, key: "", system: DEFAULT_SYSTEM, mode: "chat", opts: {} }, store.get("ps4ki.settings", {}));
+let chats = store.get("ps4ki.chats", []);
+let currentId = store.get("ps4ki.current", null);
+let busy = null;          // AbortController der laufenden Anfrage
+const CONTEXT = 4096;
+
+const saveSettings = () => store.set("ps4ki.settings", settings);
+const saveChats = () => { store.set("ps4ki.chats", chats.slice(0, 40)); store.set("ps4ki.current", currentId); };
+const cur = () => chats.find(c => c.id === currentId);
+function newChat(){ const c = { id: uid(), title: "Neuer Chat", mode: settings.mode, messages: [], t: Date.now() }; chats.unshift(c); currentId = c.id; saveChats(); renderAll(); $("input").focus(); }
+
+/* ---------- Server ---------- */
+const base = () => (settings.server || "").trim().replace(/\/+$/, "");
+const headers = () => { const h = { "Content-Type": "application/json" }; if (settings.key) h["Authorization"] = "Bearer " + settings.key; return h; };
+const mixed = () => location.protocol === "https:" && /^http:\/\//i.test(base());
+
+async function checkHealth(){
+  const pill = $("status"), txt = $("statustext");
+  const set = (cls, t) => { pill.className = "pill " + cls; txt.textContent = t; };
+  if (!base()) { set("warn", "Server-Adresse fehlt"); return "none"; }
+  try {
+    const r = await fetch(base() + "/health", { headers: settings.key ? { Authorization: "Bearer " + settings.key } : {}, signal: AbortSignal.timeout(6000) });
+    if (r.ok) { set("ok", "PS4-KI bereit"); return "ok"; }
+    if (r.status === 503) { set("warn", "Modell lädt …"); return "loading"; }
+    if (r.status === 401) { set("bad", "API-Schlüssel nötig"); return "auth"; }
+    set("bad", "Fehler " + r.status); return "error";
+  } catch (e) {
+    set("bad", mixed() ? "blockiert (siehe Hilfe)" : "nicht erreichbar"); return "offline";
+  }
+}
+
+/* ---------- Rendering ---------- */
+function renderModeBar(){
+  const sel = $("mode"); sel.innerHTML = "";
+  for (const [k, m] of Object.entries(MODES)) { const o = document.createElement("option"); o.value = k; o.textContent = m.name; sel.appendChild(o); }
+  sel.value = settings.mode;
+  const box = $("modeopts"); box.innerHTML = "";
+  const m = MODES[settings.mode];
+  (m.opts || []).forEach(([label, key, values]) => {
+    const l = document.createElement("label"); l.className = "sr"; l.textContent = label; l.htmlFor = "opt-" + key;
+    const s = document.createElement("select"); s.id = "opt-" + key; s.setAttribute("aria-label", label);
+    values.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; s.appendChild(o); });
+    s.value = settings.opts[key] || values[0]; settings.opts[key] = s.value;
+    s.onchange = () => { settings.opts[key] = s.value; saveSettings(); };
+    box.append(l, s);
+  });
+  $("modehint").textContent = m.hint;
+}
+function renderChatList(){
+  const box = $("chatlist"); box.innerHTML = "";
+  chats.forEach(c => {
+    const d = document.createElement("div"); d.className = "chatitem" + (c.id === currentId ? " active" : "");
+    const t = document.createElement("span"); t.className = "t"; t.textContent = c.title;
+    const x = document.createElement("button"); x.textContent = "✕"; x.title = "Chat löschen"; x.setAttribute("aria-label", "Chat löschen");
+    x.onclick = (ev) => { ev.stopPropagation(); if (!confirm("Diesen Chat löschen?")) return; chats = chats.filter(k => k.id !== c.id); if (currentId === c.id) currentId = chats[0] ? chats[0].id : null; if (!currentId) newChat(); else { saveChats(); renderAll(); } };
+    d.onclick = () => { currentId = c.id; saveChats(); renderAll(); $("side").classList.remove("open"); };
+    d.append(t, x); box.appendChild(d);
+  });
+}
+/* Text mit ```-Codeblöcken sicher als DOM aufbauen (kein innerHTML) */
+function fillRich(el, text){
+  el.textContent = "";
+  const parts = String(text).split(/```/);
+  parts.forEach((p, i) => {
+    if (i % 2 === 1) { const pre = document.createElement("pre"); pre.textContent = p.replace(/^[a-zA-Z0-9_+-]*\n/, "").replace(/\n$/, ""); el.appendChild(pre); }
+    else if (p) el.appendChild(document.createTextNode(p));
+  });
+}
+function msgEl(m){
+  const d = document.createElement("div"); d.className = "msg " + (m.role === "user" ? "user" : "") + (m.err ? " err" : "");
+  const w = document.createElement("span"); w.className = "who"; w.textContent = m.role === "user" ? "Du" : "PS4-KI"; d.appendChild(w);
+  const body = document.createElement("div"); body.className = "body"; fillRich(body, m.content); d.appendChild(body);
+  if (m.role !== "user" && !m.err) {
+    const meta = document.createElement("div"); meta.className = "meta";
+    if (m.stats) { const s = document.createElement("span"); s.textContent = m.stats; meta.appendChild(s); }
+    const b = document.createElement("button"); b.textContent = "Kopieren";
+    b.onclick = async () => { try{ await navigator.clipboard.writeText(m.content); b.textContent = "Kopiert"; setTimeout(() => b.textContent = "Kopieren", 1500); }catch{ b.textContent = "nicht möglich"; } };
+    meta.appendChild(b); d.appendChild(meta);
+  }
+  return d;
+}
+function renderLog(){
+  const log = $("log"); log.innerHTML = "";
+  const c = cur();
+  if (!c || !c.messages.length) {
+    const e = document.createElement("div"); e.className = "empty";
+    e.innerHTML = "<h2>Deine eigene KI auf der PS4</h2><p>Wähle oben einen Modus, tippe unten einen Text ein und sende ihn ab. Die Antwort kommt direkt von deiner PS4, es kostet nichts und geht nirgendwohin sonst.</p><p>Das Modell ist klein und langsam (ca. 4 Wörter pro Sekunde). Prüfe wichtige Antworten selbst.</p>";
+    log.appendChild(e); return;
+  }
+  c.messages.forEach(m => log.appendChild(msgEl(m)));
+  log.scrollTop = log.scrollHeight;
+}
+function renderAll(){ renderModeBar(); renderChatList(); renderLog(); updateTokInfo(); }
+function updateTokInfo(){
+  const n = estTokens($("input").value), el = $("tokinfo");
+  if (!n) { el.textContent = ""; el.className = ""; return; }
+  const sec = Math.round(n / 7.5);
+  el.textContent = `Eingabe ca. ${n} Tokens · Lesezeit auf der PS4 ca. ${sec < 90 ? sec + " s" : Math.round(sec / 60) + " min"}` + (n > 1500 ? " · zu lang für das Kontextfenster (4096)!" : n > 600 ? " · lang, das dauert" : "");
+  el.className = n > 600 ? "warnline" : "";
+}
+
+/* ---------- Anfrage ---------- */
+function buildMessages(c, userText){
+  const m = MODES[settings.mode];
+  if (m.multi) {
+    const sys = { role: "system", content: settings.system || DEFAULT_SYSTEM };
+    const hist = c.messages.filter(x => !x.err).map(x => ({ role: x.role, content: x.content }));
+    // nur so viele Nachrichten, wie sicher ins Kontextfenster passen
+    let budget = CONTEXT - settings.maxTokens - estTokens(sys.content) - 100, out = [];
+    for (let i = hist.length - 1; i >= 0; i--) { const t = estTokens(hist[i].content) + 8; if (t > budget && out.length) break; budget -= t; out.unshift(hist[i]); }
+    return [sys, ...out];
+  }
+  return [{ role: "system", content: m.system }, { role: "user", content: m.build(userText, settings.opts) }];
+}
+
+async function send(){
+  if (busy) return;
+  const text = $("input").value.trim(); if (!text) return;
+  if (!base()) { openSettings(); return; }
+  let c = cur(); if (!c) { newChat(); c = cur(); }
+  if (estTokens(text) > 2200) { alert("Der Text ist zu lang für das Kontextfenster der PS4 (4096 Tokens). Bitte kürzer fassen."); return; }
+  c.mode = settings.mode;
+  c.messages.push({ role: "user", content: text });
+  if (c.title === "Neuer Chat") c.title = text.slice(0, 40);
+  const reply = { role: "assistant", content: "" }; c.messages.push(reply);
+  $("input").value = ""; updateTokInfo();
+  renderChatList(); renderLog();
+  const log = $("log"), el = log.lastElementChild, body = el.querySelector(".body");   // renderLog() hat die leere Antwort-Blase schon angelegt
+  body.classList.add("cursor"); log.scrollTop = log.scrollHeight;
+
+  const ctrl = new AbortController(); busy = ctrl;
+  $("btnSend").hidden = true; $("btnStop").hidden = false;
+  const t0 = performance.now(); let nChunks = 0, firstAt = 0;
+  try {
+    // Aufgaben-Modi: buildMessages setzt die Vorlage um. Chat: Verlauf (die leere Antwort-Blase wird nicht mitgeschickt).
+    const payload = { model: settings.model || "qwen3-4b", messages: buildMessages(c, text).filter(m => !(m.role === "assistant" && m.content === "")), max_tokens: Number(settings.maxTokens) || 400, temperature: Number(settings.temperature), stream: true };
+    let resp, tries = 0;
+    for (;;) {
+      resp = await fetch(base() + "/v1/chat/completions", { method: "POST", headers: headers(), body: JSON.stringify(payload), signal: ctrl.signal });
+      if (resp.status === 503 && tries++ < 8) { body.textContent = "Modell lädt … bitte warten."; await new Promise(r => setTimeout(r, 8000)); continue; }
+      break;
+    }
+    if (!resp.ok) { const t = await resp.text().catch(() => ""); throw new Error("Server antwortete mit " + resp.status + (t ? ": " + t.slice(0, 160) : "")); }
+    const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = "";
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trim(); if (data === "[DONE]") continue;
+        let j; try { j = JSON.parse(data); } catch { continue; }
+        const piece = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+        if (piece) { if (!firstAt) firstAt = performance.now(); nChunks++; reply.content += piece; fillRich(body, reply.content.replace(/<think>[\s\S]*?<\/think>\s*/g, "")); log.scrollTop = log.scrollHeight; }
+      }
+    }
+    reply.content = reply.content.replace(/<think>[\s\S]*?<\/think>\s*/g, "").trim() || "(leere Antwort)";
+    const secs = (performance.now() - (firstAt || t0)) / 1000;
+    reply.stats = `${nChunks} Tokens · ${nChunks > 1 && secs > 0 ? (nChunks / secs).toFixed(1) : "–"} Tokens/s · ${Math.round((performance.now() - t0) / 1000)} s gesamt`;
+    const sp = $("speed"); sp.hidden = false; sp.textContent = reply.stats.split(" · ")[1];
+  } catch (e) {
+    if (e.name === "AbortError") { reply.content = (reply.content || "") + (reply.content ? "\n\n" : "") + "(abgebrochen)"; }
+    else { reply.err = true; reply.content = "Fehler: " + e.message + (mixed() ? "\n\nDer Browser blockiert wahrscheinlich Anfragen von dieser https-Seite an den http-Server der PS4. Öffne die Einstellungen → Hilfe." : ""); }
+  } finally {
+    busy = null; $("btnSend").hidden = false; $("btnStop").hidden = true;
+    saveChats(); renderLog(); checkHealth();
+  }
+}
+
+/* ---------- Einstellungen / Export ---------- */
+function openSettings(){
+  $("sServer").value = settings.server; $("sModel").value = settings.model; $("sMax").value = settings.maxTokens; $("sTemp").value = settings.temperature;
+  $("sKey").value = settings.key; $("sSystem").value = settings.system;
+  $("helpbox").innerHTML = "<b>Hilfe:</b> Trage die Adresse deiner PS4 ein, z. B. <code>http://192.168.x.x:8080</code>. Handy oder Laptop müssen im selben WLAN sein.<br><br>" +
+    "<b>Wenn der Status „blockiert“ zeigt:</b> Diese Seite ist per https geladen, der PS4-Server spricht http. Chrome/Edge: Schloss-Symbol → Websiteeinstellungen → <i>Unsichere Inhalte</i> → Zulassen (und ggf. „Lokales Netzwerk“ erlauben), dann Seite neu laden. Einfacher: die Seite von der PS4 selbst öffnen (<code>http://192.168.x.x:8090</code>) oder die Datei <code>index.html</code> herunterladen und lokal öffnen.<br><br>" +
+    "Alle Einstellungen und Chats bleiben nur in diesem Browser gespeichert.";
+  $("dlg").showModal();
+}
+function saveFromDialog(){
+  settings.server = $("sServer").value.trim().replace(/\/+$/, ""); if (settings.server && !/^https?:\/\//i.test(settings.server)) settings.server = "http://" + settings.server;
+  settings.model = $("sModel").value.trim() || "qwen3-4b";
+  settings.maxTokens = Math.min(1500, Math.max(16, Number($("sMax").value) || 400));
+  settings.temperature = Math.min(1.5, Math.max(0, Number($("sTemp").value) || 0.4));
+  settings.key = $("sKey").value; settings.system = $("sSystem").value.trim() || DEFAULT_SYSTEM;
+  saveSettings(); checkHealth();
+}
+function exportChat(){
+  const c = cur(); if (!c || !c.messages.length) return;
+  const txt = c.messages.map(m => (m.role === "user" ? "DU:\n" : "PS4-KI:\n") + m.content).join("\n\n---\n\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/plain;charset=utf-8" }));
+  a.download = "ps4-ki-chat.txt"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- Verdrahtung ---------- */
+$("mode").onchange = (e) => { settings.mode = e.target.value; saveSettings(); renderModeBar(); };
+$("btnSend").onclick = send;
+$("btnStop").onclick = () => busy && busy.abort();
+$("btnNew").onclick = () => { newChat(); $("side").classList.remove("open"); };
+$("btnSettings").onclick = openSettings;
+$("btnExport").onclick = exportChat;
+$("menu").onclick = () => $("side").classList.toggle("open");
+$("input").addEventListener("input", updateTokInfo);
+$("input").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); send(); } });
+$("settingsForm").addEventListener("submit", (e) => { if (e.submitter && e.submitter.value === "save") saveFromDialog(); });
+$("btnTheme").onclick = () => {
+  const root = document.documentElement, dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const now = root.dataset.theme || (dark ? "dark" : "light"), next = now === "dark" ? "light" : "dark";
+  root.dataset.theme = next; store.set("ps4ki.theme", next);
+};
+{ const t = store.get("ps4ki.theme", null); if (t) document.documentElement.dataset.theme = t; }
+
+/* Server-Adresse: wird die Seite direkt von der PS4 geladen (Port 8090), ist der Server derselbe Rechner auf Port 8080 */
+if (!settings.server && location.protocol === "http:" && /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname)) { settings.server = `http://${location.hostname}:8080`; saveSettings(); }
+if (!chats.length) newChat(); else { if (!cur()) currentId = chats[0].id; renderAll(); }
+checkHealth(); setInterval(() => { if (!busy) checkHealth(); }, 15000);
+if (!base()) setTimeout(openSettings, 400);
+</script>
+</body>
+</html>
