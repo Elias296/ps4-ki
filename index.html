@@ -2,143 +2,250 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PS4 KI</title>
 <meta name="description" content="Eigene Oberfläche für das lokale KI-Modell auf der PS4: Chat, Übersetzen, Zusammenfassen, Umformulieren und mehr. Alles bleibt in deinem Heimnetz.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M20 44V20h14a9 9 0 0 1 0 18H28' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233a3df0'/%3E%3Cstop offset='.6' stop-color='%237b3ff2'/%3E%3Cstop offset='1' stop-color='%23f0485f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='20' fill='url(%23g)'/%3E%3Cpath d='M21 45V19h14a9 9 0 0 1 0 18H29' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{
-  --bg:#f5f6f8; --panel:#ffffff; --panel2:#eef0f4; --text:#15181e; --muted:#5b6472; --line:#d9dde4;
-  --accent:#2563eb; --accent-text:#ffffff; --user:#e3ecff; --ok:#15803d; --warn:#b45309; --bad:#b91c1c;
-  --code:#0f172a; --code-text:#e2e8f0;
+  --bg:#e8eaf2; --sd:#c4c9dc; --sl:#ffffff;
+  --text:#23263a; --muted:#585d7e;
+  --g1:#3a3df0; --g2:#7b3ff2; --g3:#f0485f;
+  --grad:linear-gradient(135deg,var(--g1),var(--g2) 58%,var(--g3));
+  --ok:#0f8a4b; --warn:#a85a08; --bad:#c0233b;
+  --code:#171923; --code-text:#e6e8f2;
+  --blob1:rgba(240,72,95,.30); --blob2:rgba(58,61,240,.26);
+  --raise:8px 8px 18px var(--sd),-8px -8px 18px var(--sl);
+  --raise-s:5px 5px 11px var(--sd),-5px -5px 11px var(--sl);
+  --inset:inset 6px 6px 13px var(--sd),inset -6px -6px 13px var(--sl);
+  --inset-s:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);
+  --font:ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0e1116; --panel:#171b22; --panel2:#1f242d; --text:#e7eaf0; --muted:#98a1b0; --line:#2b323d;
-    --accent:#6ea0ff; --accent-text:#0b1220; --user:#1d2a44; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+    --bg:#1c1d21; --sd:#101114; --sl:#2c2e35; --text:#e9eaee; --muted:#9fa2b2;
+    --g1:#5560ff; --g2:#8b4dff; --g3:#ff5b6e; --ok:#4ade80; --warn:#fbbf24; --bad:#fb7185;
+    --blob1:rgba(255,91,110,.16); --blob2:rgba(85,96,255,.20);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0e1116; --panel:#171b22; --panel2:#1f242d; --text:#e7eaf0; --muted:#98a1b0; --line:#2b323d;
-  --accent:#6ea0ff; --accent-text:#0b1220; --user:#1d2a44; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+  --bg:#1c1d21; --sd:#101114; --sl:#2c2e35; --text:#e9eaee; --muted:#9fa2b2;
+  --g1:#5560ff; --g2:#8b4dff; --g3:#ff5b6e; --ok:#4ade80; --warn:#fbbf24; --bad:#fb7185;
+  --blob1:rgba(255,91,110,.16); --blob2:rgba(85,96,255,.20);
 }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 var(--font);overflow:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(40vmax 40vmax at -8% 60%,var(--blob1),transparent 70%),radial-gradient(46vmax 46vmax at 4% 28%,var(--blob2),transparent 70%)}
 button,select,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
-header h1{font-size:1.05rem;margin:0;font-weight:650;letter-spacing:.2px}
-.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:var(--accent-text);font-weight:800;font-size:.8rem}
-.spacer{flex:1}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:.82rem;color:var(--muted);background:var(--panel2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+:focus-visible{outline:2px solid var(--g2);outline-offset:3px}
+
+/* ---------- Bausteine ---------- */
+.ibtn{width:44px;height:44px;border:0;border-radius:50%;background:var(--bg);box-shadow:var(--raise-s);display:grid;place-items:center;color:var(--muted);transition:box-shadow .15s,color .15s}
+.ibtn:hover{color:var(--text)}
+.ibtn:active{box-shadow:var(--inset-s)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:var(--bg);box-shadow:var(--inset-s);font-size:.85rem;color:var(--muted);font-weight:600;white-space:nowrap}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
-.pill.ok .dot{background:var(--ok)} .pill.warn .dot{background:var(--warn)} .pill.bad .dot{background:var(--bad)}
-.btn{border:1px solid var(--line);background:var(--panel2);padding:7px 12px;border-radius:9px}
-.btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);color:var(--accent-text);border-color:transparent;font-weight:600}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.layout{flex:1;display:flex;min-height:0}
-aside{width:250px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-aside .top{padding:12px;display:flex;gap:8px}
-aside .top .btn{flex:1}
-#chatlist{overflow:auto;padding:0 8px 12px;display:flex;flex-direction:column;gap:2px}
-.chatitem{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:9px;cursor:pointer;border:1px solid transparent}
-.chatitem:hover{background:var(--panel2)}
-.chatitem.active{background:var(--panel2);border-color:var(--line)}
-.chatitem span.t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.92rem}
-.chatitem button{border:0;background:none;color:var(--muted);padding:2px 6px;border-radius:6px}
+.pill.ok .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)} .pill.warn .dot{background:var(--warn)} .pill.bad .dot{background:var(--bad)}
+.gbtn{border:0;border-radius:999px;background:var(--grad);color:#fff;font-weight:700;padding:12px 24px;box-shadow:0 10px 22px -8px rgba(91,63,240,.7);transition:transform .12s,filter .15s}
+.gbtn:hover{filter:brightness(1.07)}
+.gbtn:active{transform:translateY(1px) scale(.99)}
+.gbtn:disabled{filter:grayscale(.6);opacity:.6;cursor:wait}
+.sbtn{border:0;border-radius:999px;background:var(--bg);box-shadow:var(--raise-s);padding:12px 22px;font-weight:600;color:var(--text)}
+.sbtn:active{box-shadow:var(--inset-s)}
+
+/* ---------- Layout ---------- */
+.app{position:relative;display:flex;height:100vh;height:100dvh}
+aside{width:276px;flex:0 0 auto;padding:22px 14px 18px 22px;display:flex;flex-direction:column;gap:18px;min-height:0}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;border-radius:16px;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:800;font-size:1rem;box-shadow:var(--raise-s)}
+.brand h1{margin:0;font-size:1.25rem;font-weight:750;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:.78rem;line-height:1.2}
+#btnNew{display:flex;align-items:center;justify-content:center;gap:10px}
+#chatlist{overflow:auto;display:flex;flex-direction:column;gap:12px;padding:6px 8px 12px 6px;margin:0 -8px 0 -6px;flex:1}
+.chatitem{display:flex;align-items:center;gap:6px;padding:11px 14px;border-radius:18px;cursor:pointer;background:var(--bg);box-shadow:var(--raise-s);font-size:.92rem}
+.chatitem.active{box-shadow:var(--inset-s)}
+.chatitem span.t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatitem button{border:0;background:none;color:var(--muted);padding:4px;border-radius:8px;display:grid}
 .chatitem button:hover{color:var(--bad)}
-main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
-.modebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
-.modebar select,.modebar input{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px}
-.modehint{color:var(--muted);font-size:.88rem;flex-basis:100%}
-#log{flex:1;overflow:auto;padding:18px 16px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
-.empty{margin:auto;max-width:560px;text-align:center;color:var(--muted)}
-.empty h2{color:var(--text);font-size:1.2rem;margin:0 0 6px}
-.msg{max-width:min(820px,100%);padding:11px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);align-self:flex-start;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
-.msg.user{align-self:flex-end;background:var(--user);border-color:transparent}
-.msg .who{display:block;font-size:.75rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
-.msg pre{background:var(--code);color:var(--code-text);padding:10px 12px;border-radius:9px;overflow:auto;white-space:pre;margin:8px 0;font:.88rem/1.45 ui-monospace,Consolas,monospace}
-.msg .meta{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:.78rem;color:var(--muted)}
-.msg .meta button{border:0;background:none;color:var(--muted);padding:0;text-decoration:underline}
-.msg.err{border-color:var(--bad)}
-.cursor::after{content:"▍";animation:blink 1s steps(2) infinite;color:var(--accent)}
-@keyframes blink{50%{opacity:0}}
-@media (prefers-reduced-motion: reduce){.cursor::after{animation:none}#log{scroll-behavior:auto}}
-.composer{padding:12px 16px 16px;border-top:1px solid var(--line);background:var(--panel)}
-.composer .row{display:flex;gap:10px;align-items:flex-end}
-textarea#input{flex:1;resize:vertical;min-height:72px;max-height:40vh;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
-.composer .info{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:.8rem;margin-top:6px;flex-wrap:wrap}
-.composer .info .warnline{color:var(--warn)}
-dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);padding:0;width:min(560px,94vw)}
-dialog::backdrop{background:rgba(0,0,0,.45)}
-dialog form{padding:18px;display:grid;gap:12px}
-dialog h2{margin:0;font-size:1.1rem}
-label{display:grid;gap:4px;font-size:.88rem;color:var(--muted)}
-label input,label select,label textarea{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--text)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.help{font-size:.84rem;color:var(--muted);background:var(--panel2);border-radius:10px;padding:10px 12px}
-.help b{color:var(--text)}
-.help code{background:var(--bg);padding:1px 5px;border-radius:5px}
-.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.chatitem svg.i{width:16px;height:16px}
+main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;padding:20px 26px 20px 6px;gap:14px}
+.bar{display:flex;align-items:center;gap:12px}
+.spacer{flex:1}
 #menu{display:none}
+
+#modes{display:flex;gap:14px;overflow-x:auto;padding:8px 10px 14px;margin:-8px -10px -6px;scroll-snap-type:x proximity;scrollbar-width:none}
+#modes::-webkit-scrollbar{display:none}
+.tile{flex:0 0 auto;min-width:96px;display:grid;justify-items:center;gap:7px;padding:14px 12px;border:0;border-radius:22px;background:var(--bg);box-shadow:var(--raise-s);color:var(--muted);font-size:.8rem;font-weight:650;scroll-snap-align:start;transition:box-shadow .15s,color .15s}
+.tile:hover{color:var(--text)}
+.tile.on{box-shadow:var(--inset-s);color:var(--text)}
+.tile.on svg.i{stroke:url(#grad)}
+
+.hero{position:relative;overflow:hidden;border-radius:32px;padding:24px 28px 44px;background:var(--grad);color:#fff;display:flex;align-items:center;gap:22px;box-shadow:0 22px 44px -16px rgba(91,63,240,.6)}
+.hero::before{content:"";position:absolute;right:-8%;top:-60%;width:55%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.34),transparent 66%);pointer-events:none}
+.hero::after{content:"";position:absolute;left:-10%;bottom:-70%;width:50%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(0,0,40,.30),transparent 66%);pointer-events:none}
+.hero > *{position:relative;z-index:1}
+.hero-text{flex:1;min-width:0}
+.hero h2{margin:0 0 4px;font-size:1.75rem;line-height:1.15;font-weight:760;letter-spacing:.1px}
+.modehint{margin:0;font-size:.92rem;line-height:1.45;color:rgba(255,255,255,.92);max-width:62ch}
+#modeopts{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+#modeopts:empty{display:none}
+#modeopts select{background:rgba(255,255,255,.2);border:0;border-radius:999px;padding:8px 16px;color:#fff;font-weight:600;appearance:none;-webkit-appearance:none;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+#modeopts select option{background:#fff;color:#23263a}
+.gauge{position:relative;width:108px;height:108px;flex:0 0 auto}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge circle{fill:none;stroke-width:9;stroke-linecap:round}
+.gauge .trk{stroke:rgba(255,255,255,.28)}
+.gauge .arc{stroke:#fff;transition:stroke-dashoffset .35s ease}
+.gauge .val{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.05}
+.gauge .val b{font-size:1.65rem;font-weight:760}
+.gauge .val span{font-size:.7rem;opacity:.9}
+.wave{position:absolute !important;left:28px;right:28px;bottom:12px;height:24px;display:flex;align-items:flex-end;gap:5px;opacity:.6}
+.wave i{flex:1;max-width:7px;border-radius:4px;background:#fff;height:calc(var(--h) * 1%);transform-origin:bottom;transform:scaleY(.4);transition:transform .3s}
+.hero.busy .wave i{animation:wv 1s ease-in-out infinite;animation-delay:calc(var(--i) * -80ms);transform:none}
+@keyframes wv{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+
+#log{flex:1;overflow:auto;padding:10px 12px 10px 4px;margin-right:-8px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth;min-height:0}
+.empty{margin:auto;max-width:520px;text-align:center;color:var(--muted);padding:26px 30px;border-radius:28px;background:var(--bg);box-shadow:var(--inset)}
+.empty h3{color:var(--text);font-size:1.1rem;margin:0 0 6px}
+.empty p{margin:6px 0;font-size:.92rem}
+.msg{max-width:min(780px,92%);padding:14px 18px;border-radius:24px 24px 24px 8px;background:var(--bg);box-shadow:var(--raise-s);align-self:flex-start;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-radius:24px 24px 8px 24px;box-shadow:0 12px 24px -10px rgba(91,63,240,.65)}
+.msg .who{display:block;font-size:.76rem;font-weight:650;color:var(--muted);margin-bottom:4px}
+.msg.user .who{color:rgba(255,255,255,.8)}
+.msg pre{background:var(--code);color:var(--code-text);padding:12px 14px;border-radius:16px;overflow:auto;white-space:pre;margin:10px 0;font:.86rem/1.45 ui-monospace,Consolas,monospace;box-shadow:inset 0 2px 8px rgba(0,0,0,.5)}
+.msg .meta{display:flex;gap:12px;align-items:center;margin-top:10px;font-size:.78rem;color:var(--muted)}
+.msg .meta button{border:0;background:none;color:var(--muted);padding:0;text-decoration:underline;text-underline-offset:3px}
+.msg.err{box-shadow:var(--raise-s),inset 0 0 0 2px var(--bad)}
+.cursor::after{content:"▍";animation:blink 1s steps(2) infinite;color:var(--g2)}
+@keyframes blink{50%{opacity:0}}
+
+.composer{display:grid;gap:8px}
+.composer .row{display:flex;gap:16px;align-items:flex-end}
+textarea#input{flex:1;resize:none;min-height:58px;max-height:40vh;border:0;border-radius:28px;padding:16px 22px;background:var(--bg);box-shadow:var(--inset);line-height:1.45}
+textarea#input::placeholder{color:var(--muted)}
+textarea#input:focus-visible{outline:none;box-shadow:var(--inset),0 0 0 2px var(--g2)}
+.send{width:58px;height:58px;border-radius:50%;padding:0;display:grid;place-items:center}
+.send svg.i{width:24px;height:24px;stroke-width:2.2}
+#btnStop{background:var(--bg);color:var(--text);box-shadow:var(--raise-s)}
+#btnStop:active{box-shadow:var(--inset-s)}
+.composer .info{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:.8rem;padding:0 10px;flex-wrap:wrap}
+.composer .info .warnline{color:var(--warn);font-weight:600}
+
+/* ---------- Dialog & Sperrbildschirm ---------- */
+dialog{border:0;border-radius:30px;background:var(--bg);color:var(--text);padding:0;width:min(600px,94vw);max-height:92vh;box-shadow:var(--raise),0 30px 80px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(20,22,40,.5);backdrop-filter:blur(6px)}
+dialog form{padding:26px;display:grid;gap:16px}
+dialog h2{margin:0;font-size:1.3rem}
+label{display:grid;gap:6px;font-size:.86rem;font-weight:600;color:var(--muted)}
+label input,label select,label textarea{background:var(--bg);border:0;border-radius:16px;padding:12px 16px;color:var(--text);box-shadow:var(--inset-s);font-weight:400}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.help{font-size:.84rem;line-height:1.5;color:var(--muted);border-radius:20px;padding:14px 16px;box-shadow:var(--inset-s)}
+.help b{color:var(--text)}
+.help code{background:var(--bg);padding:1px 6px;border-radius:6px;box-shadow:var(--raise-s)}
+.actions{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap}
+
+#gate{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;background:var(--bg)}
+#gate::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(42vmax 42vmax at 8% 82%,var(--blob1),transparent 70%),radial-gradient(46vmax 46vmax at 92% 12%,var(--blob2),transparent 70%)}
+.gatecard{position:relative;width:min(400px,100%);text-align:center;padding:36px 30px 30px;border-radius:36px;background:var(--bg);box-shadow:var(--raise)}
+.gatecard .logo{width:68px;height:68px;border-radius:24px;margin:0 auto 16px;font-size:1.3rem}
+.gatecard h1{margin:0 0 6px;font-size:1.5rem}
+.gatecard p{margin:0 0 22px;color:var(--muted);font-size:.92rem}
+#gatePw{width:100%;border:0;border-radius:999px;padding:15px 22px;background:var(--bg);box-shadow:var(--inset);text-align:center;font-size:1.05rem;letter-spacing:1px}
+#gateErr{min-height:1.4em;margin:10px 0 4px;color:var(--bad);font-size:.88rem;font-weight:600}
+.gatecard .gbtn{width:100%;margin-top:6px}
+.sw{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 0 4px;cursor:pointer;color:var(--muted);font-size:.86rem;font-weight:600}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw .trk{position:relative;width:50px;height:28px;border-radius:999px;background:var(--bg);box-shadow:var(--inset-s);transition:background .2s}
+.sw .trk::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--bg);box-shadow:var(--raise-s);transition:transform .2s}
+.sw input:checked + .trk{background:var(--grad)}
+.sw input:checked + .trk::after{transform:translateX(22px);background:#fff}
+.sw input:focus-visible + .trk{outline:2px solid var(--g2);outline-offset:3px}
+
+.scrim{display:none}
+#log,#chatlist{scrollbar-width:thin;scrollbar-color:var(--sd) transparent}
 @media (max-width:820px){
-  aside{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-102%);transition:transform .2s;width:min(300px,86vw);box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  aside{position:fixed;inset:0 auto 0 0;z-index:20;transform:translateX(-104%);transition:transform .22s;width:min(300px,86vw);background:var(--bg);box-shadow:12px 0 40px rgba(0,0,0,.3);padding-top:calc(22px + env(safe-area-inset-top))}
   aside.open{transform:none}
-  #menu{display:inline-block}
+  aside.open ~ .scrim{display:block;position:fixed;inset:0;z-index:15;background:rgba(20,22,40,.45)}
+  #menu{display:grid}
+  main{padding:14px 14px 14px;gap:12px}
+  .hero{padding:18px 18px 40px;gap:14px;border-radius:28px}
+  .hero h2{font-size:1.4rem}
+  .gauge{width:82px;height:82px}
+  .gauge .val b{font-size:1.25rem}
+  .wave{left:18px;right:18px}
   .grid2{grid-template-columns:1fr}
+  .msg{max-width:96%}
+  .composer .info .lokal{display:none}
+  #statustext{max-width:34vw;overflow:hidden;text-overflow:ellipsis}
 }
-@media (prefers-reduced-motion: reduce){aside{transition:none}}
+@media (prefers-reduced-motion: reduce){
+  aside,.ibtn,.tile,.gbtn,.gauge .arc,.sw .trk,.sw .trk::after{transition:none}
+  #log{scroll-behavior:auto}
+  .cursor::after{animation:none}
+  .hero.busy .wave i{animation:none;transform:scaleY(.7)}
+}
 </style>
 </head>
 <body>
-<header>
-  <button class="btn" id="menu" aria-label="Chats anzeigen">☰</button>
-  <div class="logo" aria-hidden="true">P4</div>
-  <h1>PS4 KI</h1>
-  <span class="pill" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statustext">prüfe …</span></span>
-  <span class="spacer"></span>
-  <span class="pill" id="speed" hidden></span>
-  <button class="btn" id="btnTheme" title="Farbschema wechseln" aria-label="Farbschema wechseln">◐</button>
-  <button class="btn" id="btnSettings">Einstellungen</button>
-</header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a3df0"/><stop offset=".6" stop-color="#7b3ff2"/><stop offset="1" stop-color="#f0485f"/></linearGradient></defs></svg>
 
-<div class="layout">
+<div class="app" id="app" inert aria-hidden="true">
   <aside id="side" aria-label="Chats">
-    <div class="top">
-      <button class="btn primary" id="btnNew">+ Neuer Chat</button>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">P4</div>
+      <div><h1>PS4 KI</h1><small>Läuft bei dir zu Hause</small></div>
     </div>
+    <button class="sbtn" id="btnNew"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neuer Chat</button>
     <div id="chatlist"></div>
   </aside>
+  <div class="scrim" id="scrim"></div>
 
   <main>
-    <div class="modebar">
-      <label class="sr" for="mode">Modus</label>
-      <select id="mode" aria-label="Modus"></select>
-      <span id="modeopts"></span>
+    <div class="bar">
+      <button class="ibtn" id="menu" aria-label="Chats anzeigen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <span class="spacer"></span>
-      <button class="btn" id="btnExport" title="Chat als Textdatei speichern">Exportieren</button>
-      <div class="modehint" id="modehint"></div>
+      <span class="pill" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statustext">prüfe …</span></span>
+      <button class="ibtn" id="btnExport" title="Chat als Textdatei speichern" aria-label="Chat als Textdatei speichern"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button>
+      <button class="ibtn" id="btnTheme" title="Hell oder dunkel" aria-label="Farbschema wechseln"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 3v18"/></svg></button>
+      <button class="ibtn" id="btnSettings" title="Einstellungen" aria-label="Einstellungen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M14 5v4M4 17h2M10 17h10M6 15v4"/></svg></button>
+      <button class="ibtn" id="btnLock" title="Seite sperren" aria-label="Seite sperren"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     </div>
+
+    <nav id="modes" aria-label="Modus"></nav>
+
+    <section class="hero" id="hero" aria-label="Aktueller Modus">
+      <div class="hero-text">
+        <h2 id="heroTitle"></h2>
+        <p class="modehint" id="modehint"></p>
+        <div id="modeopts"></div>
+      </div>
+      <div class="gauge" role="img" aria-label="Schreibtempo der KI in Tokens pro Sekunde" id="gauge">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="42"/><circle class="arc" id="gArc" cx="50" cy="50" r="42"/></svg>
+        <div class="val"><b id="gVal">–</b><span>Tokens/s</span></div>
+      </div>
+      <div class="wave" id="wave" aria-hidden="true"></div>
+    </section>
 
     <div id="log" aria-live="polite"></div>
 
     <div class="composer">
       <div class="row">
         <label class="sr" for="input">Eingabe</label>
-        <textarea id="input" placeholder="Text eingeben … (Strg+Enter zum Senden)"></textarea>
-        <div style="display:grid;gap:8px">
-          <button class="btn primary" id="btnSend">Senden</button>
-          <button class="btn" id="btnStop" hidden>Stopp</button>
-        </div>
+        <textarea id="input" rows="1" placeholder="Text eingeben …"></textarea>
+        <button class="gbtn send" id="btnSend" aria-label="Senden" title="Senden (Strg+Enter)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="ibtn send" id="btnStop" aria-label="Stopp" title="Stopp" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h8v8H8z"/></svg></button>
       </div>
       <div class="info">
-        <span id="tokinfo"></span>
-        <span>Läuft lokal auf deiner PS4 · kostenlos · nichts geht an GitHub oder Dritte</span>
+        <span id="tokinfo">Strg+Enter sendet</span>
+        <span class="lokal">Läuft lokal auf deiner PS4 · kostenlos · nichts geht an GitHub oder Dritte</span>
       </div>
     </div>
   </main>
@@ -171,49 +278,139 @@ label input,label select,label textarea{background:var(--bg);border:1px solid va
     </label>
     <div class="help" id="helpbox"></div>
     <div class="actions">
-      <button class="btn" value="cancel" formnovalidate>Abbrechen</button>
-      <button class="btn primary" value="save" id="btnSave">Speichern</button>
+      <button class="sbtn" value="cancel" formnovalidate>Abbrechen</button>
+      <button class="gbtn" value="save" id="btnSave">Speichern</button>
     </div>
   </form>
 </dialog>
+
+<div id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <form class="gatecard" id="gateForm" autocomplete="off">
+    <div class="logo" aria-hidden="true">P4</div>
+    <h1 id="gateTitle">PS4 KI</h1>
+    <p>Gib das Passwort ein, um die Seite zu öffnen.</p>
+    <label class="sr" for="gatePw">Passwort</label>
+    <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <div id="gateErr" role="alert"></div>
+    <button class="gbtn" id="gateBtn" type="submit">Entsperren</button>
+    <label class="sw"><input type="checkbox" id="gateRemember" checked><span class="trk"></span>Auf diesem Gerät merken</label>
+  </form>
+</div>
 
 <script>
 "use strict";
 /* ---------- kleine Helfer ---------- */
 const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
 const store = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch{ return d; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
 };
 const uid = () => Math.random().toString(36).slice(2, 10);
 const estTokens = (s) => Math.ceil((s || "").length / 3.2);   // grobe Schätzung für Deutsch
+function svgIcon(d){
+  const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "i"); s.setAttribute("aria-hidden", "true");
+  const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); s.appendChild(p); return s;
+}
+
+/* ---------- Passwortschutz (nur Sperrbildschirm, siehe README) ----------
+   Gespeichert ist nur ein PBKDF2-SHA256-Hash. Die Berechnung ist reines JavaScript,
+   damit sie auch auf http-Seiten im Heimnetz funktioniert (dort fehlt crypto.subtle). */
+const PW = { salt: "d41dbc89a80708dbe0442b569ef18b7c", hash: "bb5f93971b5be04b432858662bc8e6445174f3852339f27978f1b8c3b999b251", iter: 100000 };
+const SHA_K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+const SHA_IV = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+const SHA_W = new Uint32Array(64);
+function compress(h, blk, out){
+  const w = SHA_W;
+  for (let i = 0; i < 16; i++) w[i] = blk[i];
+  for (let i = 16; i < 64; i++) {
+    const x = w[i-15], y = w[i-2];
+    w[i] = (w[i-16] + (((x>>>7)|(x<<25))^((x>>>18)|(x<<14))^(x>>>3)) + w[i-7] + (((y>>>17)|(y<<15))^((y>>>19)|(y<<13))^(y>>>10))) | 0;
+  }
+  let A = h[0], B = h[1], C = h[2], D = h[3], E = h[4], F = h[5], G = h[6], H = h[7];
+  for (let i = 0; i < 64; i++) {
+    const t1 = (H + (((E>>>6)|(E<<26))^((E>>>11)|(E<<21))^((E>>>25)|(E<<7))) + ((E&F)^(~E&G)) + SHA_K[i] + w[i]) | 0;
+    const t2 = ((((A>>>2)|(A<<30))^((A>>>13)|(A<<19))^((A>>>22)|(A<<10))) + ((A&B)^(A&C)^(B&C))) | 0;
+    H = G; G = F; F = E; E = (D + t1) | 0; D = C; C = B; B = A; A = (t1 + t2) | 0;
+  }
+  const r = [A, B, C, D, E, F, G, H];
+  for (let i = 0; i < 8; i++) out[i] = (h[i] + r[i]) | 0;
+}
+const toWords = (bytes) => { const o = new Uint32Array(16); for (let i = 0; i < 64; i++) o[i >> 2] |= bytes[i] << (24 - 8 * (i & 3)); return o; };
+function pbkdf2Hex(pwBytes, saltBytes, iters){
+  if (pwBytes.length > 64 || saltBytes.length > 55 - 4) return "";
+  const ip = new Uint32Array(16), op = new Uint32Array(16);
+  for (let i = 0; i < 64; i++) { const k = i < pwBytes.length ? pwBytes[i] : 0; ip[i >> 2] |= (k ^ 0x36) << (24 - 8 * (i & 3)); op[i >> 2] |= (k ^ 0x5c) << (24 - 8 * (i & 3)); }
+  const ist = new Uint32Array(8), ost = new Uint32Array(8);
+  compress(SHA_IV, ip, ist); compress(SHA_IV, op, ost);
+  const blk = new Uint32Array(16), tmp = new Uint32Array(8), U = new Uint32Array(8), T = new Uint32Array(8);
+  const pb = new Uint8Array(64); pb.set(saltBytes); pb[saltBytes.length + 3] = 1; pb[saltBytes.length + 4] = 0x80;
+  const bits = (64 + saltBytes.length + 4) * 8; pb[62] = (bits >> 8) & 255; pb[63] = bits & 255;
+  compress(ist, toWords(pb), tmp);
+  blk.set(tmp); blk[8] = 0x80000000; blk.fill(0, 9, 15); blk[15] = 768;
+  compress(ost, blk, U); T.set(U);
+  for (let n = 1; n < iters; n++) {
+    blk.set(U); blk[8] = 0x80000000; blk.fill(0, 9, 15); blk[15] = 768; compress(ist, blk, tmp);
+    blk.set(tmp); blk[8] = 0x80000000; blk.fill(0, 9, 15); blk[15] = 768; compress(ost, blk, U);
+    for (let i = 0; i < 8; i++) T[i] ^= U[i];
+  }
+  return Array.from(T, (x) => (x >>> 0).toString(16).padStart(8, "0")).join("");
+}
+const hexBytes = (h) => Uint8Array.from(h.match(/../g) || [], (b) => parseInt(b, 16));
+const normPw = (s) => String(s).toLowerCase().replace(/[\s-]+/g, "");
+const derive = (pw) => pbkdf2Hex(new TextEncoder().encode(normPw(pw)), hexBytes(PW.salt), PW.iter);
+
+let started = false, fails = 0;
+function setLocked(locked){
+  $("gate").hidden = !locked;
+  $("app").inert = locked; $("app").setAttribute("aria-hidden", String(locked));
+  if (locked) { $("gatePw").value = ""; setTimeout(() => $("gatePw").focus(), 60); }
+  else startApp();
+}
+$("gateForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("gateBtn"), err = $("gateErr"), pw = $("gatePw").value;
+  if (!pw) { err.textContent = "Bitte das Passwort eingeben."; return; }
+  btn.disabled = true; err.textContent = ""; btn.textContent = "Prüfe …";
+  await new Promise((r) => setTimeout(r, 40));
+  const h = derive(pw);
+  if (h && h === PW.hash) {
+    fails = 0; if ($("gateRemember").checked) store.set("ps4ki.unlock", PW.hash);
+    btn.disabled = false; btn.textContent = "Entsperren"; setLocked(false); return;
+  }
+  fails++; err.textContent = "Das Passwort stimmt nicht.";
+  if (fails >= 3) { err.textContent = "Das Passwort stimmt nicht. Bitte kurz warten …"; await new Promise((r) => setTimeout(r, Math.min(fails, 8) * 1000)); err.textContent = "Das Passwort stimmt nicht."; }
+  btn.disabled = false; btn.textContent = "Entsperren"; $("gatePw").select();
+});
+$("btnLock").onclick = () => { store.set("ps4ki.unlock", null); setLocked(true); };
 
 /* ---------- Modi ---------- */
 const MODES = {
-  chat:      { name: "Chat", hint: "Freies Gespräch. Der Verlauf wird mitgeschickt (nur die letzten Nachrichten, wegen des kleinen Kontextfensters).", multi: true },
-  translate: { name: "Übersetzen", hint: "Text einfügen, die Zielsprache wählen. Gut für kurze Texte.", opts: [["Zielsprache", "lang", ["Englisch","Deutsch","Französisch","Spanisch","Italienisch","Türkisch","Russisch"]]],
+  chat:      { name: "Chat", short: "Chat", icon: "M4 5h16v11H9l-5 4z", hint: "Freies Gespräch. Der Verlauf wird mitgeschickt (nur die letzten Nachrichten, wegen des kleinen Kontextfensters).", multi: true },
+  translate: { name: "Übersetzen", short: "Übersetzen", icon: "M3 5h8M7 3v2M5 9c1.5 2.5 3.5 4 6 5M9 5c-.7 3-2.5 6-6 8M14 20l4-10 4 10M15.2 17h5.6", hint: "Text einfügen, die Zielsprache wählen. Gut für kurze Texte.", opts: [["Zielsprache", "lang", ["Englisch","Deutsch","Französisch","Spanisch","Italienisch","Türkisch","Russisch"]]],
     system: "Du bist ein präziser Übersetzer. Gib ausschließlich die Übersetzung aus, ohne Erklärung.",
     build: (t, o) => `Übersetze den folgenden Text ins ${o.lang || "Englische"}:\n\n${t}` },
-  summarize: { name: "Zusammenfassen", hint: "Kurze Texte (unter etwa 600 Wörtern). Längere dauern auf der PS4 sehr lange.", opts: [["Länge", "len", ["1 Satz","3 Sätze","5 Stichpunkte"]]],
+  summarize: { name: "Zusammenfassen", short: "Zusammenfassen", icon: "M4 6h16M4 11h16M4 16h10", hint: "Kurze Texte (unter etwa 600 Wörtern). Längere dauern auf der PS4 sehr lange.", opts: [["Länge", "len", ["1 Satz","3 Sätze","5 Stichpunkte"]]],
     system: "Du fasst Texte sachlich und korrekt zusammen. Erfinde nichts dazu. Antworte auf Deutsch.",
     build: (t, o) => `Fasse den folgenden Text in ${o.len || "3 Sätzen"} zusammen:\n\n${t}` },
-  rewrite:   { name: "Umformulieren", hint: "Verbessert Ton und Stil, ohne den Inhalt zu ändern.", opts: [["Stil", "tone", ["freundlicher","formeller","kürzer","einfacher","sachlicher"]]],
+  rewrite:   { name: "Umformulieren", short: "Umformulieren", icon: "M4 20l1-4L16 5l3 3L8 19zM14 7l3 3", hint: "Verbessert Ton und Stil, ohne den Inhalt zu ändern.", opts: [["Stil", "tone", ["freundlicher","formeller","kürzer","einfacher","sachlicher"]]],
     system: "Du formulierst Texte um. Behalte Inhalt und Sprache bei. Gib nur den neuen Text aus.",
     build: (t, o) => `Formuliere den folgenden Text ${o.tone || "freundlicher"} um:\n\n${t}` },
-  explain:   { name: "Einfach erklären", hint: "Erklärt Begriffe oder Texte in einfachen Worten.", system: "Du erklärst Dinge einfach, kurz und korrekt auf Deutsch. Wenn du etwas nicht sicher weißt, sage es.",
+  explain:   { name: "Einfach erklären", short: "Erklären", icon: "M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10c.8.8 1 1.5 1 2h6c0-.5.2-1.2 1-2a6 6 0 0 0-4-10z", hint: "Erklärt Begriffe oder Texte in einfachen Worten.", system: "Du erklärst Dinge einfach, kurz und korrekt auf Deutsch. Wenn du etwas nicht sicher weißt, sage es.",
     build: (t) => `Erkläre einfach und kurz:\n\n${t}` },
-  bullets:   { name: "Notizen → Stichpunkte", hint: "Macht aus unordentlichen Notizen eine klare Liste.", system: "Du ordnest Notizen zu einer kurzen, klaren Stichpunktliste auf Deutsch. Erfinde nichts.",
+  bullets:   { name: "Notizen → Stichpunkte", short: "Stichpunkte", icon: "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01", hint: "Macht aus unordentlichen Notizen eine klare Liste.", system: "Du ordnest Notizen zu einer kurzen, klaren Stichpunktliste auf Deutsch. Erfinde nichts.",
     build: (t) => `Mache aus diesen Notizen eine übersichtliche Stichpunktliste:\n\n${t}` },
-  email:     { name: "E-Mail-Entwurf", hint: "Beschreibe das Anliegen in Stichworten, du bekommst einen Entwurf mit Betreff.", opts: [["Ton","tone",["freundlich","förmlich","kurz und direkt"]]],
+  email:     { name: "E-Mail-Entwurf", short: "E-Mail", icon: "M3 6h18v12H3zM3 7l9 7 9-7", hint: "Beschreibe das Anliegen in Stichworten, du bekommst einen Entwurf mit Betreff.", opts: [["Ton","tone",["freundlich","förmlich","kurz und direkt"]]],
     system: "Du schreibst kurze, höfliche E-Mail-Entwürfe auf Deutsch mit Betreff. Erfinde keine Fakten, Namen oder Termine.",
     build: (t, o) => `Schreibe einen ${o.tone || "freundlichen"} E-Mail-Entwurf zu diesem Anliegen:\n\n${t}` },
-  code:      { name: "Code erklären (klein)", hint: "Nur für kurze Code-Stücke. Für Fehlersuche und größere Aufgaben ist das Modell zu klein.", system: "Du erklärst kurze Code-Stücke verständlich auf Deutsch. Sei vorsichtig, wenn du unsicher bist.",
+  code:      { name: "Code erklären (klein)", short: "Code", icon: "M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16", hint: "Nur für kurze Code-Stücke. Für Fehlersuche und größere Aufgaben ist das Modell zu klein.", system: "Du erklärst kurze Code-Stücke verständlich auf Deutsch. Sei vorsichtig, wenn du unsicher bist.",
     build: (t) => `Erkläre kurz, was dieser Code macht:\n\n${t}` }
 };
 
 /* ---------- Zustand ---------- */
 const DEFAULT_SYSTEM = "Du bist ein hilfreicher, ehrlicher Assistent. Antworte knapp und klar auf Deutsch. Wenn du etwas nicht weißt, sage es.";
 const settings = Object.assign({ server: "", model: "qwen3-4b", temperature: 0.4, maxTokens: 400, key: "", system: DEFAULT_SYSTEM, mode: "chat", opts: {} }, store.get("ps4ki.settings", {}));
+if (!MODES[settings.mode]) settings.mode = "chat";
 let chats = store.get("ps4ki.chats", []);
 let currentId = store.get("ps4ki.current", null);
 let busy = null;          // AbortController der laufenden Anfrage
@@ -223,6 +420,16 @@ const saveSettings = () => store.set("ps4ki.settings", settings);
 const saveChats = () => { store.set("ps4ki.chats", chats.slice(0, 40)); store.set("ps4ki.current", currentId); };
 const cur = () => chats.find(c => c.id === currentId);
 function newChat(){ const c = { id: uid(), title: "Neuer Chat", mode: settings.mode, messages: [], t: Date.now() }; chats.unshift(c); currentId = c.id; saveChats(); renderAll(); $("input").focus(); }
+
+/* ---------- Tempo-Ring & Wellenform ---------- */
+const CIRC = 2 * Math.PI * 42;
+function setGauge(t){
+  const arc = $("gArc"); arc.style.strokeDasharray = CIRC;
+  arc.style.strokeDashoffset = CIRC * (1 - Math.min(Math.max(t || 0, 0) / 8, 1));
+  $("gVal").textContent = t ? t.toFixed(1) : "–";
+  $("gauge").setAttribute("aria-label", t ? `Schreibtempo der KI: ${t.toFixed(1)} Tokens pro Sekunde` : "Schreibtempo der KI: noch nicht gemessen");
+}
+{ const w = $("wave"); const hs = [38,62,45,80,55,92,48,70,100,58,76,42,88,64,50,95,60,72,40,84,52,68,46,78]; hs.forEach((h, i) => { const b = document.createElement("i"); b.style.setProperty("--h", h); b.style.setProperty("--i", i); w.appendChild(b); }); }
 
 /* ---------- Server ---------- */
 const base = () => (settings.server || "").trim().replace(/\/+$/, "");
@@ -246,11 +453,18 @@ async function checkHealth(){
 
 /* ---------- Rendering ---------- */
 function renderModeBar(){
-  const sel = $("mode"); sel.innerHTML = "";
-  for (const [k, m] of Object.entries(MODES)) { const o = document.createElement("option"); o.value = k; o.textContent = m.name; sel.appendChild(o); }
-  sel.value = settings.mode;
-  const box = $("modeopts"); box.innerHTML = "";
+  const nav = $("modes"); nav.innerHTML = "";
+  for (const [k, m] of Object.entries(MODES)) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "tile" + (k === settings.mode ? " on" : "");
+    b.setAttribute("aria-pressed", String(k === settings.mode)); b.title = m.name;
+    const s = document.createElement("span"); s.textContent = m.short; b.append(svgIcon(m.icon), s);
+    b.onclick = () => { settings.mode = k; saveSettings(); renderModeBar(); };
+    nav.appendChild(b);
+  }
+  const on = nav.querySelector(".on"); if (on && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = Math.max(0, on.offsetLeft - 20);
   const m = MODES[settings.mode];
+  $("heroTitle").textContent = m.name; $("modehint").textContent = m.hint;
+  const box = $("modeopts"); box.innerHTML = "";
   (m.opts || []).forEach(([label, key, values]) => {
     const l = document.createElement("label"); l.className = "sr"; l.textContent = label; l.htmlFor = "opt-" + key;
     const s = document.createElement("select"); s.id = "opt-" + key; s.setAttribute("aria-label", label);
@@ -259,14 +473,13 @@ function renderModeBar(){
     s.onchange = () => { settings.opts[key] = s.value; saveSettings(); };
     box.append(l, s);
   });
-  $("modehint").textContent = m.hint;
 }
 function renderChatList(){
   const box = $("chatlist"); box.innerHTML = "";
   chats.forEach(c => {
     const d = document.createElement("div"); d.className = "chatitem" + (c.id === currentId ? " active" : "");
     const t = document.createElement("span"); t.className = "t"; t.textContent = c.title;
-    const x = document.createElement("button"); x.textContent = "✕"; x.title = "Chat löschen"; x.setAttribute("aria-label", "Chat löschen");
+    const x = document.createElement("button"); x.title = "Chat löschen"; x.setAttribute("aria-label", "Chat löschen"); x.appendChild(svgIcon("M6 6l12 12M18 6L6 18"));
     x.onclick = (ev) => { ev.stopPropagation(); if (!confirm("Diesen Chat löschen?")) return; chats = chats.filter(k => k.id !== c.id); if (currentId === c.id) currentId = chats[0] ? chats[0].id : null; if (!currentId) newChat(); else { saveChats(); renderAll(); } };
     d.onclick = () => { currentId = c.id; saveChats(); renderAll(); $("side").classList.remove("open"); };
     d.append(t, x); box.appendChild(d);
@@ -299,7 +512,7 @@ function renderLog(){
   const c = cur();
   if (!c || !c.messages.length) {
     const e = document.createElement("div"); e.className = "empty";
-    e.innerHTML = "<h2>Deine eigene KI auf der PS4</h2><p>Wähle oben einen Modus, tippe unten einen Text ein und sende ihn ab. Die Antwort kommt direkt von deiner PS4, es kostet nichts und geht nirgendwohin sonst.</p><p>Das Modell ist klein und langsam (ca. 4 Wörter pro Sekunde). Prüfe wichtige Antworten selbst.</p>";
+    e.innerHTML = "<h3>Deine eigene KI auf der PS4</h3><p>Wähle oben einen Modus, tippe unten einen Text ein und sende ihn ab. Die Antwort kommt direkt von deiner PS4, kostet nichts und geht nirgendwohin sonst.</p><p>Das Modell ist klein und langsam (ca. 4 Wörter pro Sekunde). Prüfe wichtige Antworten selbst.</p>";
     log.appendChild(e); return;
   }
   c.messages.forEach(m => log.appendChild(msgEl(m)));
@@ -313,6 +526,7 @@ function updateTokInfo(){
   el.textContent = `Eingabe ca. ${n} Tokens · Lesezeit auf der PS4 ca. ${sec < 90 ? sec + " s" : Math.round(sec / 60) + " min"}` + (n > 1500 ? " · zu lang für das Kontextfenster (4096)!" : n > 600 ? " · lang, das dauert" : "");
   el.className = n > 600 ? "warnline" : "";
 }
+function growInput(){ const t = $("input"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight + 2, Math.round(innerHeight * 0.4)) + "px"; }
 
 /* ---------- Anfrage ---------- */
 function buildMessages(c, userText){
@@ -338,14 +552,14 @@ async function send(){
   c.messages.push({ role: "user", content: text });
   if (c.title === "Neuer Chat") c.title = text.slice(0, 40);
   const reply = { role: "assistant", content: "" }; c.messages.push(reply);
-  $("input").value = ""; updateTokInfo();
+  $("input").value = ""; growInput(); updateTokInfo();
   renderChatList(); renderLog();
   const log = $("log"), el = log.lastElementChild, body = el.querySelector(".body");   // renderLog() hat die leere Antwort-Blase schon angelegt
   body.classList.add("cursor"); log.scrollTop = log.scrollHeight;
 
   const ctrl = new AbortController(); busy = ctrl;
-  $("btnSend").hidden = true; $("btnStop").hidden = false;
-  const t0 = performance.now(); let nChunks = 0, firstAt = 0;
+  $("btnSend").hidden = true; $("btnStop").hidden = false; $("hero").classList.add("busy");
+  const t0 = performance.now(); let nChunks = 0, firstAt = 0, lastGauge = 0;
   try {
     // Aufgaben-Modi: buildMessages setzt die Vorlage um. Chat: Verlauf (die leere Antwort-Blase wird nicht mitgeschickt).
     const payload = { model: settings.model || "qwen3-4b", messages: buildMessages(c, text).filter(m => !(m.role === "assistant" && m.content === "")), max_tokens: Number(settings.maxTokens) || 400, temperature: Number(settings.temperature), stream: true };
@@ -366,18 +580,22 @@ async function send(){
         const data = line.slice(5).trim(); if (data === "[DONE]") continue;
         let j; try { j = JSON.parse(data); } catch { continue; }
         const piece = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
-        if (piece) { if (!firstAt) firstAt = performance.now(); nChunks++; reply.content += piece; fillRich(body, reply.content.replace(/<think>[\s\S]*?<\/think>\s*/g, "")); log.scrollTop = log.scrollHeight; }
+        if (piece) {
+          const now = performance.now(); if (!firstAt) firstAt = now; nChunks++; reply.content += piece;
+          fillRich(body, reply.content.replace(/<think>[\s\S]*?<\/think>\s*/g, "")); log.scrollTop = log.scrollHeight;
+          if (nChunks > 3 && now - lastGauge > 300) { lastGauge = now; setGauge(nChunks / ((now - firstAt) / 1000)); }
+        }
       }
     }
     reply.content = reply.content.replace(/<think>[\s\S]*?<\/think>\s*/g, "").trim() || "(leere Antwort)";
-    const secs = (performance.now() - (firstAt || t0)) / 1000;
-    reply.stats = `${nChunks} Tokens · ${nChunks > 1 && secs > 0 ? (nChunks / secs).toFixed(1) : "–"} Tokens/s · ${Math.round((performance.now() - t0) / 1000)} s gesamt`;
-    const sp = $("speed"); sp.hidden = false; sp.textContent = reply.stats.split(" · ")[1];
+    const secs = (performance.now() - (firstAt || t0)) / 1000, tps = nChunks > 1 && secs > 0 ? nChunks / secs : 0;
+    reply.stats = `${nChunks} Tokens · ${tps ? tps.toFixed(1) : "–"} Tokens/s · ${Math.round((performance.now() - t0) / 1000)} s gesamt`;
+    if (tps) { setGauge(tps); store.set("ps4ki.tps", tps); }
   } catch (e) {
     if (e.name === "AbortError") { reply.content = (reply.content || "") + (reply.content ? "\n\n" : "") + "(abgebrochen)"; }
     else { reply.err = true; reply.content = "Fehler: " + e.message + (mixed() ? "\n\nDer Browser blockiert wahrscheinlich Anfragen von dieser https-Seite an den http-Server der PS4. Öffne die Einstellungen → Hilfe." : ""); }
   } finally {
-    busy = null; $("btnSend").hidden = false; $("btnStop").hidden = true;
+    busy = null; $("btnSend").hidden = false; $("btnStop").hidden = true; $("hero").classList.remove("busy");
     saveChats(); renderLog(); checkHealth();
   }
 }
@@ -388,7 +606,7 @@ function openSettings(){
   $("sKey").value = settings.key; $("sSystem").value = settings.system;
   $("helpbox").innerHTML = "<b>Hilfe:</b> Trage die Adresse deiner PS4 ein, z. B. <code>http://192.168.x.x:8080</code>. Handy oder Laptop müssen im selben WLAN sein.<br><br>" +
     "<b>Wenn der Status „blockiert“ zeigt:</b> Diese Seite ist per https geladen, der PS4-Server spricht http. Chrome/Edge: Schloss-Symbol → Websiteeinstellungen → <i>Unsichere Inhalte</i> → Zulassen (und ggf. „Lokales Netzwerk“ erlauben), dann Seite neu laden. Einfacher: die Seite von der PS4 selbst öffnen (<code>http://192.168.x.x:8090</code>) oder die Datei <code>index.html</code> herunterladen und lokal öffnen.<br><br>" +
-    "Alle Einstellungen und Chats bleiben nur in diesem Browser gespeichert.";
+    "Alle Einstellungen und Chats bleiben nur in diesem Browser gespeichert. Das Seitenpasswort ist nur eine Sperre für die Oberfläche; geschützt ist die KI vor allem dadurch, dass sie nur in deinem Heimnetz erreichbar ist.";
   $("dlg").showModal();
 }
 function saveFromDialog(){
@@ -407,14 +625,14 @@ function exportChat(){
 }
 
 /* ---------- Verdrahtung ---------- */
-$("mode").onchange = (e) => { settings.mode = e.target.value; saveSettings(); renderModeBar(); };
 $("btnSend").onclick = send;
 $("btnStop").onclick = () => busy && busy.abort();
 $("btnNew").onclick = () => { newChat(); $("side").classList.remove("open"); };
 $("btnSettings").onclick = openSettings;
 $("btnExport").onclick = exportChat;
 $("menu").onclick = () => $("side").classList.toggle("open");
-$("input").addEventListener("input", updateTokInfo);
+$("scrim").onclick = () => $("side").classList.remove("open");
+$("input").addEventListener("input", () => { updateTokInfo(); growInput(); });
 $("input").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); send(); } });
 $("settingsForm").addEventListener("submit", (e) => { if (e.submitter && e.submitter.value === "save") saveFromDialog(); });
 $("btnTheme").onclick = () => {
@@ -424,11 +642,17 @@ $("btnTheme").onclick = () => {
 };
 { const t = store.get("ps4ki.theme", null); if (t) document.documentElement.dataset.theme = t; }
 
-/* Server-Adresse: wird die Seite direkt von der PS4 geladen (Port 8090), ist der Server derselbe Rechner auf Port 8080 */
-if (!settings.server && location.protocol === "http:" && /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname)) { settings.server = `http://${location.hostname}:8080`; saveSettings(); }
-if (!chats.length) newChat(); else { if (!cur()) currentId = chats[0].id; renderAll(); }
-checkHealth(); setInterval(() => { if (!busy) checkHealth(); }, 15000);
-if (!base()) setTimeout(openSettings, 400);
+/* ---------- Start (erst nach dem Entsperren) ---------- */
+function startApp(){
+  if (started) return; started = true;
+  /* Server-Adresse: wird die Seite direkt von der PS4 geladen (Port 8090), ist der Server derselbe Rechner auf Port 8080 */
+  if (!settings.server && location.protocol === "http:" && /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname)) { settings.server = `http://${location.hostname}:8080`; saveSettings(); }
+  setGauge(Number(store.get("ps4ki.tps", 0)) || 0);
+  if (!chats.length) newChat(); else { if (!cur()) currentId = chats[0].id; renderAll(); }
+  growInput(); checkHealth(); setInterval(() => { if (!busy) checkHealth(); }, 15000);
+  if (!base()) setTimeout(openSettings, 400);
+}
+setLocked(store.get("ps4ki.unlock", null) !== PW.hash);
 </script>
 </body>
 </html>
